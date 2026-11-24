@@ -140,9 +140,10 @@ final class CanvasView: NSView {
         let ph = rep?.pixelsHigh ?? Int(image.size.height)
         guard let bmp = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: pw, pixelsHigh: ph,
                                          bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
-                                         colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0),
-              let ctx = NSGraphicsContext(bitmapImageRep: bmp) else { return nil }
+                                         colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0) else { return nil }
+        // Set the point size BEFORE making the context, or drawing lands in one corner at 1x.
         bmp.size = image.size
+        guard let ctx = NSGraphicsContext(bitmapImageRep: bmp) else { return nil }
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = ctx
         image.draw(in: NSRect(origin: .zero, size: image.size))
@@ -714,9 +715,10 @@ final class OverlayView: NSView {
         guard let crop = cg.cropping(to: px),
               let bmp = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: crop.width, pixelsHigh: crop.height,
                                          bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
-                                         colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0),
-              let ctx = NSGraphicsContext(bitmapImageRep: bmp) else { return nil }
+                                         colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0) else { return nil }
+        // Set the point size BEFORE making the context, or drawing lands in one corner at 1x.
         bmp.size = s.size
+        guard let ctx = NSGraphicsContext(bitmapImageRep: bmp) else { return nil }
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = ctx
         ctx.cgContext.draw(crop, in: CGRect(origin: .zero, size: s.size))
