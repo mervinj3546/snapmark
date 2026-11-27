@@ -22,6 +22,11 @@ static class Program
         if (oi >= 0 && oi + 1 < args.Length) open = args[oi + 1];
         bool background = args.Contains("--background");
 
+        if (args.Contains("--uninstall")) { Installer.Uninstall(); return; }
+        // Double-clicked a downloaded copy: offer to install it (or update the installed one).
+        if (args.Length == 0 && !Installer.IsInstalledCopy && Installer.OfferInstall()) return;
+        if (Installer.IsInstalledCopy) Installer.Register();
+
         using var mutex = new Mutex(true, MutexName, out bool first);
         if (!first)
         {
@@ -119,7 +124,8 @@ sealed class TrayApp : ApplicationContext
         }
         else
         {
-            tray.ShowBalloonTip(3000, "Snapmark is running", "Press Ctrl+Shift+2 or click the tray icon to capture.", ToolTipIcon.None);
+            var title = Environment.GetCommandLineArgs().Contains("--installed") ? "Snapmark is installed" : "Snapmark is running";
+            tray.ShowBalloonTip(3000, title, "Press Ctrl+Shift+2 or click the tray icon to capture. Find it in the Start menu any time.", ToolTipIcon.None);
         }
     }
 

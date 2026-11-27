@@ -1,0 +1,71 @@
+# Builds the macOS DMG and the Windows exe.
+# On a pushed tag like v1.0.0 it also publishes them as a GitHub Release.
+name: Build and release
+
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set version from tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          V="${GITHUB_REF_NAME#v}"
+          plutil -replace CFBundleShortVersionString -string "$V" Info.plist
+          plutil -replace CFBundleVersion -string "$V" Info.plist
+      - name: Build DMG
+        run: ./build.sh --no-install
+      - run: mv build/Snapmark.dmg build/Snapmark-macOS.dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Snapmark-macOS
+          path: build/Snapmark-macOS.dmg
+          if-no-files-found: error
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build exe
+        shell: pwsh
+        run: |
+          $v = ''
+          if ($env:GITHUB_REF -like 'refs/tags/v*') { $v = $env:GITHUB_REF_NAME.Substring(1) }
+          ./build-windows.ps1 -Release -Version $v
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Snapmark-Windows
+          path: build/windows/Snapmark-Windows.exe
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [macos, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --title "Snapmark $GITHUB_REF_NAME" \
+            --notes-file .github/release-notes.md
