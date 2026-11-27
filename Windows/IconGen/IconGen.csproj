@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Writes the Windows app icon (Snapmark.ico) using the same drawing code as the app. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Snapmark\AppIcon.cs" />
+    <Compile Include="..\Snapmark\Glyphs.cs" />
+    <Compile Include="..\Snapmark\Native.cs" />
+  </ItemGroup>
+
+</Project>
