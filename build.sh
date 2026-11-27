@@ -1,5 +1,6 @@
 #!/bin/bash
-# Builds build/Snapmark.app and build/Snapmark.dmg
+# Builds build/Snapmark.app and build/Snapmark.dmg, then installs to /Applications.
+# Usage: ./build.sh [--no-install]
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -25,6 +26,12 @@ cp -R "$APP" "$STAGE/"
 ln -s /Applications "$STAGE/Applications"
 hdiutil create -quiet -volname Snapmark -srcfolder "$STAGE" -ov -format UDZO build/Snapmark.dmg
 rm -rf "$STAGE"
+
+# `./build.sh --no-install` stops here (used by the release workflow).
+if [[ "${1:-}" == "--no-install" ]]; then
+    echo "Built build/Snapmark.dmg"
+    exit 0
+fi
 
 # Install: quit the running app, remove every other Snapmark copy, put the new one in /Applications.
 pkill -x Snapmark || true

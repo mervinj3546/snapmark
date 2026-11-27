@@ -1,6 +1,8 @@
 # Builds build\windows\Snapmark.exe and installs it for the current user.
 # Usage:  powershell -ExecutionPolicy Bypass -File .\build-windows.ps1 [-NoInstall]
-param([switch]$NoInstall)
+#         powershell -ExecutionPolicy Bypass -File .\build-windows.ps1 -Release [-Version 1.2.0]
+#   -Release builds the downloadable build\windows\Snapmark-Windows.exe (self-contained: no .NET needed) and does not install.
+param([switch]$NoInstall, [switch]$Release, [string]$Version = '')
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
@@ -12,9 +14,22 @@ New-Item -ItemType Directory -Force $out | Out-Null
 dotnet run --project Windows/IconGen -c Release -- "$out\Snapmark.ico"
 if ($LASTEXITCODE -ne 0) { throw 'Icon generation failed' }
 
+$versionArgs = @()
+if ($Version) { $versionArgs = @("-p:Version=$Version") }
+
+if ($Release) {
+    dotnet publish Windows/Snapmark -c Release -r win-x64 --self-contained true `
+        -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
+        -p:DebugType=none @versionArgs -o "$out\publish"
+    if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
+    Copy-Item "$out\publish\Snapmark.exe" "$out\Snapmark-Windows.exe" -Force
+    Write-Host "Built $out\Snapmark-Windows.exe"
+    return
+}
+
 # Single-file exe (uses the installed .NET 8 Desktop Runtime)
 dotnet publish Windows/Snapmark -c Release -r win-x64 --self-contained false `
-    -p:PublishSingleFile=true -p:DebugType=none -o "$out\publish"
+    -p:PublishSingleFile=true -p:DebugType=none @versionArgs -o "$out\publish"
 if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
 Copy-Item "$out\publish\Snapmark.exe" "$out\Snapmark.exe" -Force
 
